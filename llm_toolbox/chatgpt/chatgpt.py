@@ -51,10 +51,14 @@ class ChatGptPetition(LLMPetition):
         self._add_message('assistant', content)
 
     def _execute(self, calls=0, limit_calls=-1):
+        args = {}
+        if self.functions:
+            args['functions']=[f['definition'] for f in self.functions.values()]
+            args['function_call']="auto"
+
         response = openai.ChatCompletion.create(
             model=self.model_name,
             messages=self.messages,
-            functions=[f['definition'] for f in self.functions.values()],
             function_call="auto",
         )
 
