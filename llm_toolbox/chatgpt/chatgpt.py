@@ -51,15 +51,15 @@ class ChatGptPetition(LLMPetition):
         self._add_message('assistant', content)
 
     def _execute(self, calls=0, limit_calls=-1):
-        args = {}
+        petition_kwargs = {}
         if self.functions:
-            args['functions']=[f['definition'] for f in self.functions.values()]
-            args['function_call']="auto"
+            petition_kwargs['functions']=[f['definition'] for f in self.functions.values()]
+            petition_kwargs['function_call']="auto"
 
         response = openai.ChatCompletion.create(
             model=self.model_name,
             messages=self.messages,
-            function_call="auto",
+            **petition_kwargs
         )
 
         message = response["choices"][0]["message"]
