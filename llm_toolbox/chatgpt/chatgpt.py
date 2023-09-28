@@ -41,14 +41,17 @@ class ChatGptPetition(LLMPetition):
             function=function
         )
 
-    def system(self, content):
-        self._add_message('system', content)
+    def system(self, *contents):
+        for content in contents:
+            self._add_message('system', content)
     
-    def user(self, content):
-        self._add_message('user', content)
+    def user(self, *contents):
+        for content in contents:
+            self._add_message('user', content)
     
-    def assistant(self, content):
-        self._add_message('assistant', content)
+    def assistant(self, *contents):
+        for content in contents:
+            self._add_message('assistant', content)
 
     def _execute(self, calls=0, limit_calls=-1):
         petition_kwargs = {}
