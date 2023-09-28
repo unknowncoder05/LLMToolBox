@@ -11,9 +11,16 @@ class LLMPetition:
     
     def _check_model(self, model_name):
         return True
+    
+    def on_message(self):
+        pass
+    
+    def _raw_add_message(self, message):
+        self.messages.append(message)
+        self.on_message(message)
 
     def _add_message(self, role, content):
-        self.messages.append(dict(role=role, content=content))
+        self._raw_add_message(dict(role=role, content=content))
     
     def _execute(self, calls=0, limit_calls=-1):
         return ''
