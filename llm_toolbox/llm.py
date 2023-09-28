@@ -12,7 +12,7 @@ class LLMPetition:
     def _check_model(self, model_name):
         return True
     
-    def on_message(self):
+    def on_message(self, message):
         pass
     
     def _raw_add_message(self, message):
