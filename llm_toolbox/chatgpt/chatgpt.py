@@ -55,7 +55,7 @@ class ChatGptPetition(LLMPetition):
         for content in contents:
             self._add_message("assistant", content)
 
-    def _execute(self, calls=0, limit_calls=-1):
+    def _execute(self, calls=0, limit_calls=-1, attach_exceptions_to_messages=True):
         petition_kwargs = {}
         if self.functions:
             petition_kwargs["functions"] = [
@@ -73,36 +73,48 @@ class ChatGptPetition(LLMPetition):
         # Step 2, check if the model wants to call a function
         log.info(f"message: {message}")
         if message.get("function_call"):
-            function_name = message["function_call"]["name"]
-
-            if function_name not in self.functions:
-                raise ModelResponseError(f'"{function_name}" function not registered')
-
-            # Args
-            function_call_arguments = message["function_call"]["arguments"]
             try:
-                function_args = json.loads(function_call_arguments)
-            except json.decoder.JSONDecodeError:
-                log.error(f"function_call arguments: {function_call_arguments}")
-                raise ModelResponseError("model response arguments not in json")
+                function_name = message["function_call"]["name"]
 
-            function = self.functions[function_name]["function"]
+                # Validate function
+                if function_name not in self.functions:
+                    raise ModelResponseError(f'"{function_name}" function not registered')
 
-            # Function call
-            try:
-                function_response = function(**function_args)
-                function_response = json.dumps(function_response)
-            except TypeError as e:
-                log.error(e)
-                raise ModelResponseError("model response arguments invalid")
+                # Args
+                function_call_arguments = message["function_call"]["arguments"]
+                try:
+                    function_args = json.loads(function_call_arguments)
+                except json.decoder.JSONDecodeError:
+                    log.error(f"function_call arguments: {function_call_arguments}")
+                    raise ModelResponseError("model response arguments not in json")
 
-            self._raw_add_message(
-                {
-                    "role": "function",
-                    "name": function_name,
-                    "content": function_response,
-                }
-            )
+                function = self.functions[function_name]["function"]
+
+                # Function call
+                try:
+                    function_response = function(**function_args)
+                    function_response = json.dumps(function_response)
+                except TypeError as e:
+                    log.error(e)
+                    raise ModelResponseError("model response arguments invalid")
+
+                self._raw_add_message(
+                    {
+                        "role": "function",
+                        "name": function_name,
+                        "content": function_response,
+                    }
+                )
+            except ModelResponseError as e:
+                if not attach_exceptions_to_messages:
+                    raise e
+                self._raw_add_message(
+                    {
+                        "role": "function",
+                        "name": function_name,
+                        "content": str(e),
+                    }
+                )
 
             # Step 4, send model the info on the function call and function response
             second_response = self.execute(calls + 1, limit_calls)
